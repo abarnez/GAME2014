@@ -12,6 +12,7 @@ public class PlayerBehaviour : MonoBehaviour
     public bool isGrounded;
     public bool isJumping;
     public Transform spawnPoint;
+    public bool isCrouching;
 
     private Rigidbody2D m_rigidBody2D;
     private SpriteRenderer m_spriteRenderer;
@@ -26,7 +27,7 @@ public class PlayerBehaviour : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         _Move();
     }
@@ -35,49 +36,74 @@ public class PlayerBehaviour : MonoBehaviour
     {
         if (isGrounded)
         {
-            if (joystick.Horizontal > joystickHorizontalSensitivity)
+            if(!isJumping && !isCrouching)
             {
-                // move right
-                m_rigidBody2D.AddForce(Vector2.right * horizontalForce * Time.deltaTime);
-                m_spriteRenderer.flipX = false;
-                m_animator.SetInteger("AnimState", 1);
+                if (joystick.Horizontal > joystickHorizontalSensitivity)
+                {
+                    // move right
+                    m_rigidBody2D.AddForce(Vector2.right * horizontalForce * Time.deltaTime);
+                    m_spriteRenderer.flipX = false;
+                    m_animator.SetInteger("AnimState", (int)PlayerAnimationState.RUN);
+                }
+                else if (joystick.Horizontal < -joystickHorizontalSensitivity)
+                {
+                    // move left
+                    m_rigidBody2D.AddForce(Vector2.left * horizontalForce * Time.deltaTime);
+                    m_spriteRenderer.flipX = true;
+                    m_animator.SetInteger("AnimState", (int)PlayerAnimationState.RUN);
+                }
+                else 
+                {
+                    m_animator.SetInteger("AnimState", (int)PlayerAnimationState.IDLE);
+                }
             }
-            else if (joystick.Horizontal < -joystickHorizontalSensitivity)
-            {
-                // move left
-                m_rigidBody2D.AddForce(Vector2.left * horizontalForce * Time.deltaTime);
-                m_spriteRenderer.flipX = true;
-                m_animator.SetInteger("AnimState", 1);
-            }
-            else if(!isJumping)
-            {
-                m_animator.SetInteger("AnimState", 0);
-            }
+           
+         
 
 
-            if ((joystick.Vertical > joystickVerticalSensitivity) && (!isJumping))
-            {
-                // jump
-                m_rigidBody2D.AddForce(Vector2.up * verticalForce * Time.deltaTime);
-                m_animator.SetInteger("AnimState", 2);
-                isJumping = true;
-            }
-            else
-            {
-                isJumping = false;
-            }
-        }
+                if ((joystick.Vertical > joystickVerticalSensitivity) && (!isJumping))
+                {
+                    // jump
+                    m_rigidBody2D.AddForce(Vector2.up * verticalForce);
+                    m_animator.SetInteger("AnimState", (int)PlayerAnimationState.JUMP);
+                    isJumping = true;
+                }
+                else
+                {
+                    isJumping = false;
+                }
+            
 
+                if ((joystick.Vertical < -joystickVerticalSensitivity) && (!isCrouching))
+                {
+                // crouch
+                
+
+                    m_animator.SetInteger("AnimState", (int)PlayerAnimationState.CROUCH);
+                    isCrouching = true;
+                }
+                else
+                {
+                    isCrouching = false;
+                }
+            }
+        
     }
 
     private void OnCollisionEnter2D(Collision2D other)
     {
-        isGrounded = true;
+        if (other.gameObject.tag == "Platforms")
+        {
+            isGrounded = true;
+        }
     }
 
     private void OnCollisionExit2D(Collision2D other)
     {
-        isGrounded = false;
+        if (other.gameObject.tag == "Platforms")
+        {
+            isGrounded = false;
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
